@@ -150,3 +150,6 @@ cython_debug/
 *.swp
 *.swo
 *.swn
+
+save_project_code.sh
+project_code.txt

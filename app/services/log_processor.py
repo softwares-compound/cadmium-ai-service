@@ -1,12 +1,10 @@
-import requests
-from app.core.config import settings
 from app.services.llm_service import query_llm
 
-def process_log(log):
-    # Fetch additional data if necessary
-    response = requests.get(f"{settings.cadmium_cloud_api_url}/logs/{log.id}")
-    log_data = response.json()
-    
-    # Process log with LLM
-    llm_response = query_llm(log_data['message'])
-    return llm_response
+def process_log(log_data):
+    # Extract the message or error field from the log
+    message = log_data.get("error", "No error message")[:40] + "..." if len(log_data.get("error", "")) > 40 else log_data.get("error", "No error message")
+    print(f"Processing Log: {message}")
+
+    # Query the local LLM with the log message
+    # llm_response = query_llm(message)
+    # print(f"LLM Response: {llm_response}")
