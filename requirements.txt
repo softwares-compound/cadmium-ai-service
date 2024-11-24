@@ -4,3 +4,4 @@ pydantic
 requests
 websockets
 pydantic-settings
+llama-index
