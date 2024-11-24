@@ -28,8 +28,8 @@ async def websocket_connect():
                         if response.status_code == 200:
                             log_data = response.json()
 
-                            # Process the log
-                            process_log(log_data)
+                            # Process the log asynchronously
+                            asyncio.create_task(process_log(log_data))  # Schedule the async function
                         else:
                             print(
                                 f"Failed to fetch log details. Status: {response.status_code}, Error: {response.text}"
