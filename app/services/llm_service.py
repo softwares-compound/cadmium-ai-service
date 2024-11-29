@@ -1,46 +1,65 @@
-import requests
+from datetime import datetime
+from fastapi import HTTPException
+from llama_index.core.base.response.schema import Response
 
-async def query_llm(message: str):
-    url = "http://localhost:11434/api/generate"
-    payload = {
-        "model": "qwen2.5-coder:latest",
-        "prompt": generate_prompt(message),
-        'stream': False,
-        "options": {
-            "temperature": 0.7,
-            "max_tokens": 150
+def process_log_with_rag(log_data: dict, application_id: str, app):
+    """
+    Process log data using NaiveRAGService to find a solution.
+
+    Args:
+        app (FastAPI): The FastAPI application instance to access app state.
+        log_data (dict): The structured log data containing details like error, traceback, and other metadata.
+        application_id (str): The application ID to fetch the appropriate NaiveRAGService.
+
+    Returns:
+        dict: The response from the RAG service with additional metadata.
+    """
+    try:
+        # Get the appropriate NaiveRAGService from app state
+        rag_service = app.state.naive_rag_services.get(application_id)
+        if not rag_service:
+            raise HTTPException(
+                status_code=404,
+                detail=f"RAG service for application ID '{application_id}' not found.",
+            )
+
+        # Extract relevant information from the log data
+        error_message = log_data.get("error", "No error message provided.")
+        traceback = log_data.get("traceback", "No traceback available.")
+        url = log_data.get("url", "No URL provided.")
+        method = log_data.get("method", "No method provided.")
+        created_at = log_data.get("created_at", "No timestamp provided.")
+
+        # Construct the query for the RAG service
+        query = f"""
+        I encountered the following error while accessing {url} using {method} method:
+        Error Message: {error_message}
+        Traceback: {traceback}
+        Can you provide a detailed solution or suggest debugging steps?
+        """
+
+        # Query the RAG service
+        response: Response = rag_service.query(query)
+        
+
+        # Prepare a structured response
+        print(f"Type of application_id: {type(application_id)}")
+        print(f"Type of created_at: {type(created_at)}")
+        print(f"Type of query: {type(query)}")
+        print(f"Type of response: {type(response)}")
+        print(f"Type of processed_at: {type(datetime.utcnow().isoformat() + 'Z')}")
+        return {
+            "application_id": application_id,
+            "created_at": created_at,
+            "query": query,
+            "rag_response": response.response,
+            "processed_at": datetime.utcnow().isoformat() + "Z",
         }
-    }
-    headers = {
-        "Content-Type": "application/json"
-    }
 
-    response = requests.post(url, json=payload, headers=headers)
-    response.raise_for_status()
-    return response.json().get("response", "")
-
-
-def generate_prompt(log_message) -> str:
-    prompt = f"""
-You are an expert in analyzing error logs and providing detailed explanations and solutions. 
-Analyze the following log entry:
-
-
-
-### Your Task:
-1. Identify the **root cause** of the issue based on the log message.
-2. Suggest a **clear and concise solution** or steps to resolve the error.
-3. If additional context or debugging information is needed, provide a list of **questions to gather more details**.
-4. Summarize your findings and solution in a structured and developer-friendly way.
-
-Ensure that your explanation and solution are **specific, actionable**, and **suitable for a software engineer**.
-
-### Output Format:
-**Root Cause**: <Describe the root cause>
-**Solution**: <Provide actionable steps to resolve the issue>
-**Additional Questions (if any)**: <List any clarifying questions>
-**Summary**: <Summarize your analysis in one concise paragraph>
-
-Here's the log entry:
-"""
-    return prompt + log_message
+    except Exception as e:
+        
+        return {
+            "error": f"An error occurred while processing the log: {str(e)}",
+            "log_data": log_data,
+            "processed_at": datetime.utcnow().isoformat() + "Z",
+        }

@@ -5,3 +5,6 @@ requests
 websockets
 pydantic-settings
 llama-index
+llama-index-llms-ollama
+llama-index-embeddings-ollama
+pymongo
