@@ -6,7 +6,7 @@ from ...llms import llm
 
 
 class NaiveRAGService:
-    def __init__(self, application_id, persist_dir="./naive_rag_storage", default_required_exts=None):
+    def __init__(self, application_id, persist_dir="./storage/naive_rag_storage", default_required_exts=None):
         """
         Initialize the NaiveRAG service with a storage directory for indexes.
 

@@ -24,7 +24,7 @@ async def fetch_application_ids():
             data = await response.json()
             print("Fetched application data:", data)
             # Extract and convert ObjectId strings to ObjectId instances
-            application_ids = [ObjectId(app['_id']['$oid']) for app in data]
+            application_ids = [str(ObjectId(app['_id']['$oid'])) for app in data]
             return application_ids
         
         
@@ -40,6 +40,7 @@ async def startup_event():
 
     # Fetch application IDs from the Rust API
     APPLICATION_IDS = await fetch_application_ids()
+    print(APPLICATION_IDS, "APPLICATION_IDS")
     if settings.preferred_rag_approach == "naive_rag":
         # Initialize NaiveRAGService for each application ID
         app.state.naive_rag_services = {}

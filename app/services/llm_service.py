@@ -40,7 +40,7 @@ def process_log_with_rag(log_data: dict, application_id: str, app):
 
         # Query the RAG service
         response: Response = rag_service.query(query)
-        
+        print(f"RAG response: {response}")
 
         # Prepare a structured response
         print(f"Type of application_id: {type(application_id)}")
@@ -57,7 +57,7 @@ def process_log_with_rag(log_data: dict, application_id: str, app):
         }
 
     except Exception as e:
-        
+        print(f"An error occurred while processing the log: {str(e)}")
         return {
             "error": f"An error occurred while processing the log: {str(e)}",
             "log_data": log_data,
