@@ -18,24 +18,30 @@ async def process_log(log_data, application_id: str, log_id: str, app):
     """
     max_retries = 5
     for attempt in range(1, max_retries + 1):
-        response = process_log_with_rag(log_data, application_id, app)
-        rag_response = str(response.get("rag_response", ""))
-        if rag_response:
-            formatted_rag_response = process_rag_response(rag_response)
-            update_rag_response_on_cloud(
-                log_id = log_id,
-                application_id=application_id,
-                rag_response={
-                    "formatted_rag_response": formatted_rag_response,
-                    "rag_response": response,
-                    "updated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                }
-            )
-            print(f"Attempt {attempt}: Successfully processed log.")
-            return response
-        else:
-            print(f"Attempt {attempt}: RAG response is empty. Retrying...")
-            await asyncio.sleep(1)  # Optional: wait before retrying
+        try:
+            # Await the asynchronous function
+            response = await process_log_with_rag(log_data,log_id, application_id, app)
+            rag_response = response.get("rag_response", "")
+
+            if rag_response:
+                formatted_rag_response = process_rag_response(rag_response)
+                update_rag_response_on_cloud(
+                    log_id=log_id,
+                    application_id=application_id,
+                    rag_response={
+                        "formatted_rag_response": formatted_rag_response,
+                        "rag_response": response,
+                        "updated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                    }
+                )
+                print(f"Attempt {attempt}: Successfully processed log.")
+                return response
+            else:
+                print(f"Attempt {attempt}: RAG response is empty. Retrying...")
+                await asyncio.sleep(1)  # Optional: wait before retrying
+        except Exception as e:
+            print(f"Attempt {attempt}: Error processing log: {str(e)}")
+            await asyncio.sleep(1)
 
     print("Failed to process log after multiple attempts.")
     return {"error": "Failed to process log after multiple attempts."}

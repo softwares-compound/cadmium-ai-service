@@ -1,11 +1,11 @@
 import asyncio
 import aiohttp
 from bson import ObjectId
-from fastapi import FastAPI
+from fastapi import FastAPI, WebSocket
 from app.core.websocket_client import start_websocket_client
+from app.core.websocket_server import websocket_endpoint, electron_ws_manager
 from app.core.config import API_BASE_URL, settings
 from app.rag.paradigms.naive_rag.naive_rag_executer import NaiveRAGService
-
 
 app = FastAPI()
 
@@ -24,10 +24,10 @@ async def fetch_application_ids():
             data = await response.json()
             print("Fetched application data:", data)
             # Extract and convert ObjectId strings to ObjectId instances
-            application_ids = [ObjectId(app['_id']['$oid']) for app in data]
+            application_ids = [str(ObjectId(app['_id']['$oid'])) for app in data]
             return application_ids
-        
-        
+
+
 @app.on_event("startup")
 async def startup_event():
     """
@@ -35,19 +35,21 @@ async def startup_event():
     - Start WebSocket client
     - Create NaiveRAGService instances for each application ID and store in app state.
     """
-    # Start the WebSocket client
+    # Start the WebSocket client to listen for logs
     start_websocket_client(app)
 
     # Fetch application IDs from the Rust API
-    APPLICATION_IDS = await fetch_application_ids()
+    application_ids = await fetch_application_ids()
+    print(application_ids, "APPLICATION_IDS")
     if settings.preferred_rag_approach == "naive_rag":
         # Initialize NaiveRAGService for each application ID
         app.state.naive_rag_services = {}
-        for application_id in APPLICATION_IDS:
+        for application_id in application_ids:
             app.state.naive_rag_services[application_id] = NaiveRAGService(
                 application_id=application_id, persist_dir="./storage/naive_rag_storage"
             )
-        print(f"Initialized NaiveRAGService for application IDs: {APPLICATION_IDS}")
+        print(f"Initialized NaiveRAGService for application IDs: {application_ids}")
+
 
 @app.on_event("shutdown")
 async def shutdown_event():
@@ -62,3 +64,12 @@ async def shutdown_event():
     await asyncio.gather(*tasks, return_exceptions=True)
 
     print("Application shutdown complete.")
+
+
+# Add WebSocket route for Electron communication
+@app.websocket("/ws/electron")
+async def electron_ws(websocket: WebSocket):
+    """
+    WebSocket endpoint to handle Electron communication.
+    """
+    await websocket_endpoint(websocket)

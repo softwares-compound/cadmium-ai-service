@@ -4,7 +4,7 @@ import websockets
 import requests
 from app.core.config import API_BASE_URL, WEBSOCKET_URL, WEBSOCKET_HEADERS
 from app.services.log_processor import process_log
-
+from app.core.websocket_server import electron_ws_manager 
 
 
 async def websocket_connect(app):
@@ -43,11 +43,12 @@ async def websocket_connect(app):
                         )
                         if response.status_code == 200:
                             log_data = response.json()
-                            # application_id = log_data.get("app_id")
-                            
+                            # First, broadcast the raw log to active WebSocket connections
+                            await broadcast_log(log_data, application_id, log_id)
 
-                            # Process the log asynchronously
-                            asyncio.create_task(process_log(log_data, application_id,log_id, app))  # Pass app explicitly
+                            # Then, process the log asynchronously
+                            asyncio.create_task(process_log(log_data, application_id, log_id, app))
+                    
                         else:
                             print(
                                 f"Failed to fetch log details. Status: {response.status_code}, Error: {response.text}"
@@ -63,3 +64,28 @@ async def websocket_connect(app):
 
 def start_websocket_client(app):
     asyncio.create_task(websocket_connect(app))
+
+async def broadcast_log(log_data, application_id, log_id):
+    """
+    Broadcast the raw log to all active WebSocket connections.
+
+    Args:
+        log_data (dict): The raw log data to broadcast.
+        application_id (str): The application ID.
+        log_id (str): The log ID.
+    """
+    message = {
+        "protocol_version": "1.0",
+        "type": "workflow",
+        "workflow_id": "log_append",
+        "action": "new_log",
+        "message_id": f"log_{log_id}",
+        "timestamp": asyncio.get_event_loop().time(),
+        "data": {
+            "log_id": log_id,
+            "application_id": application_id,
+            "raw_log": log_data
+        }
+    }
+
+    await electron_ws_manager.broadcast(message)

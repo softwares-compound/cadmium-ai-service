@@ -1,8 +1,9 @@
 from datetime import datetime
 from fastapi import HTTPException
-from llama_index.core.base.response.schema import Response
+from llama_index.core.base.response.schema import Response, StreamingResponse
+from app.core.websocket_server import electron_ws_manager
 
-def process_log_with_rag(log_data: dict, application_id: str, app):
+async def process_log_with_rag(log_data: dict,log_id:str, application_id: str, app):
     """
     Process log data using NaiveRAGService to find a solution.
 
@@ -12,7 +13,7 @@ def process_log_with_rag(log_data: dict, application_id: str, app):
         application_id (str): The application ID to fetch the appropriate NaiveRAGService.
 
     Returns:
-        dict: The response from the RAG service with additional metadata.
+        dict: The aggregated response from the RAG service with additional metadata.
     """
     try:
         # Get the appropriate NaiveRAGService from app state
@@ -39,25 +40,59 @@ def process_log_with_rag(log_data: dict, application_id: str, app):
         """
 
         # Query the RAG service
-        response: Response = rag_service.query(query)
-        
+        response = rag_service.query(query)
 
-        # Prepare a structured response
-        print(f"Type of application_id: {type(application_id)}")
-        print(f"Type of created_at: {type(created_at)}")
-        print(f"Type of query: {type(query)}")
-        print(f"Type of response: {type(response)}")
-        print(f"Type of processed_at: {type(datetime.utcnow().isoformat() + 'Z')}")
+        response_text = ""  # To aggregate the response
+
+        # Handle streaming response
+        if isinstance(response, StreamingResponse):
+            for chunk in response.response_gen:  # Using a regular for loop for synchronous generator
+                # Stream the chunk to WebSocket clients
+                message = {
+                    "protocol_version": "1.0",
+                    "type": "workflow",
+                    "workflow_id": "log_process",
+                    "action": "stream_log_response",
+                    "data": {"chunk": chunk, "application_id": application_id,"log_id": log_id},
+                }
+                await electron_ws_manager.broadcast(message)
+                # Aggregate the chunk into the response text
+                response_text += chunk
+            print(f"Aggregated RAG StreamingResponse: {response_text}")
+        else:
+            # Handle regular response
+            response_text = response.response
+            # Stream the full response to WebSocket clients
+            message = {
+                "protocol_version": "1.0",
+                "type": "workflow",
+                "workflow_id": "log_process",
+                "action": "final_log_response",
+                "data": {"response": response_text, "application_id": application_id},
+            }
+            await electron_ws_manager.broadcast(message)
+            print(f"RAG Response: {response_text}")
+
+        # Prepare a structured response to return
         return {
             "application_id": application_id,
             "created_at": created_at,
             "query": query,
-            "rag_response": response.response,
+            "rag_response": response_text,
             "processed_at": datetime.utcnow().isoformat() + "Z",
         }
 
     except Exception as e:
-        
+        print(f"An error occurred while processing the log: {str(e)}")
+        error_message = {
+            "protocol_version": "1.0",
+            "type": "workflow",
+            "workflow_id": "log_process",
+            "action": "error",
+            "data": {"error": str(e), "application_id": application_id},
+        }
+        await electron_ws_manager.broadcast(error_message)
+
         return {
             "error": f"An error occurred while processing the log: {str(e)}",
             "log_data": log_data,
