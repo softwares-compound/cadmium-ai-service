@@ -16,8 +16,11 @@ class Settings(BaseSettings):
     cd_id: str = os.getenv("CD_ID", "")
     cd_secret: str = os.getenv("CD_SECRET", "")
     api_base_url: str = os.getenv("API_BASE_URL", "http://43.204.216.93")
+    response_streaming: bool = os.getenv("RESPONSE_STREAMING", False)
     
     model_config = SettingsConfigDict(env_file=".env")
+    
+    
     
 
 settings = Settings()

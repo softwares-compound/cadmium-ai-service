@@ -1,6 +1,7 @@
 import os
 import pickle
 from llama_index.core import SimpleDirectoryReader, VectorStoreIndex, Settings
+from app.core.config import settings
 from ...embedding_models import embedding
 from ...llms import llm
 
@@ -22,6 +23,7 @@ class NaiveRAGService:
         self.index_cache = {} 
         Settings.llm = llm
         Settings.embed_model = embedding
+        self.response_streaming = settings.response_streaming
 
         # Load or create the index during initialization
         self.index = self._load_or_create_index()
@@ -73,7 +75,7 @@ class NaiveRAGService:
         Returns:
             str: The response from the query engine.
         """
-        query_engine = self.index.as_query_engine()
+        query_engine = self.index.as_query_engine(streaming=self.response_streaming)
         response = query_engine.query(query)
         return response
 
