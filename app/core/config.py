@@ -2,7 +2,7 @@ import os
 from pydantic_settings import BaseSettings,SettingsConfigDict
 
 class Settings(BaseSettings):
-    cadmium_cloud_ws_url: str = os.getenv("CADMIUM_CLOUD_WS_URL", "wss://cadmium-cloud.example.com/ws")
+    cadmium_cloud_ws_url: str = os.getenv("CADMIUM_CLOUD_WS_URL", "https://cadmium.softwarescompound.in/")
     cadmium_cloud_api_url: str = os.getenv("CADMIUM_CLOUD_API_URL", "https://cadmium-cloud.example.com/api")
     local_llm_endpoint: str = os.getenv("LOCAL_LLM_ENDPOINT", "http://localhost:8001/llm")
     local_llm_model: str = os.getenv("LOCAL_LLM_MODEL", "qwen2.5-coder:latest")
@@ -12,10 +12,10 @@ class Settings(BaseSettings):
     openai_embedding_model: str = os.getenv("OPENAI_EMBEDDING_MODEL", "text-embedding-ada-002")
     preferred_environment: str = os.getenv("PREFERRED_ENVIRONMENT", "local")
     preferred_rag_approach: str = os.getenv("PREFERRED_RAG_APPROACH", "naive_rag")
-    websocket_url: str = os.getenv("WEBSOCKET_URL", "ws://43.204.216.93/ws")
+    websocket_url: str = os.getenv("WEBSOCKET_URL", "wss://cadmium.softwarescompound.in/ws")
     cd_id: str = os.getenv("CD_ID", "")
     cd_secret: str = os.getenv("CD_SECRET", "")
-    api_base_url: str = os.getenv("API_BASE_URL", "http://43.204.216.93")
+    api_base_url: str = os.getenv("API_BASE_URL", "https://cadmium.softwarescompound.in")
     response_streaming: bool = os.getenv("RESPONSE_STREAMING", False)
     
     model_config = SettingsConfigDict(env_file=".env")

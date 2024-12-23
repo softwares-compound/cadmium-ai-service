@@ -73,3 +73,7 @@ async def electron_ws(websocket: WebSocket):
     WebSocket endpoint to handle Electron communication.
     """
     await websocket_endpoint(websocket)
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
