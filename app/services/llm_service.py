@@ -58,7 +58,21 @@ async def process_log_with_rag(log_data: dict,log_id:str, application_id: str, a
                 await electron_ws_manager.broadcast(message)
                 # Aggregate the chunk into the response text
                 response_text += chunk
+            
+
             print(f"Aggregated RAG StreamingResponse: {response_text}")
+
+            # Send a "stream complete" message after the for loop
+            stream_complete_message = {
+                "protocol_version": "1.0",
+                "type": "workflow",
+                "workflow_id": "log_process",
+                "action": "stream_complete",
+                "data": {"application_id": application_id, "log_id": log_id},
+            }
+            await electron_ws_manager.broadcast(stream_complete_message)
+            print("Streaming completed.")
+
         else:
             # Handle regular response
             response_text = response.response
