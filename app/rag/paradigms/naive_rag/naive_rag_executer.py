@@ -24,9 +24,11 @@ class NaiveRAGService:
         Settings.llm = llm
         Settings.embed_model = embedding
         self.response_streaming = settings.response_streaming
-
-        # Load or create the index during initialization
-        self.index = self._load_or_create_index()
+        try:
+            # Load or create the index during initialization
+            self.index = self._load_or_create_index()
+        except:
+            print(f"Failed to load or create index for application_id '{self.application_id}'.")
 
     def _get_index_path(self):
         """
