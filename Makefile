@@ -12,4 +12,5 @@ install:
 	. $(VENV_DIR)/bin/activate && pip install -r requirements.txt
 
 compile:
-	. $(VENV_DIR)/bin/activate && nuitka --standalone --output-dir=$(BIN_DIR) app/main.py
+	. $(VENV_DIR)/bin/activate &&  \
+	nuitka --standalone --include-package=websockets --include-package=websockets.asyncio.client --output-dir=$(BIN_DIR) app/main.py
